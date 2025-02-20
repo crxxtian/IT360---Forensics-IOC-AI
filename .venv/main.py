@@ -50,74 +50,88 @@ class VirusTotalAPI:
         response = requests.get(url, headers=self.headers)
         return response.json() if response.status_code == 200 else {"error": "Failed to retrieve URL scan results"}
 
+def get_virustotal_gui_link(scan_type, identifier):
+    """Generates the correct VirusTotal GUI link for the scan result."""
+    base_url = "https://www.virustotal.com/gui/"
+    if scan_type == "File":
+        return f"{base_url}file/{identifier}"
+    elif scan_type == "IP":
+        return f"{base_url}ip-address/{identifier}"
+    elif scan_type == "URL":
+        return f"{base_url}url/{identifier}"
+    return "Unknown"
+
+def get_threat_verdict(malicious_count):
+    """Returns a quick verdict based on malicious detection count."""
+    if malicious_count >= 15:
+        return f"{Fore.RED}[DANGEROUS] Highly Malicious - Immediate Action Required!{Style.RESET_ALL}"
+    elif 5 <= malicious_count < 15:
+        return f"{Fore.YELLOW}[SUSPICIOUS] Medium Risk - Proceed with Caution!{Style.RESET_ALL}"
+    else:
+        return f"{Fore.GREEN}[SAFE] Low Risk - Likely Harmless.{Style.RESET_ALL}"
+
+def format_threat_classification(classification_data):
+    """Formats VirusTotal threat classification into a structured format."""
+    if not classification_data:
+        return "No classification data available."
+
+    formatted_output = f"\n{Fore.YELLOW}--- Threat Classification ---{Style.RESET_ALL}\n"
+    if "suggested_threat_label" in classification_data:
+        formatted_output += f"Suggested Threat Label: {classification_data['suggested_threat_label']}\n"
+
+    if "popular_threat_name" in classification_data:
+        formatted_output += "Popular Threat Names:\n"
+        for threat in classification_data["popular_threat_name"]:
+            formatted_output += f"- {threat['value']} (Detected {threat['count']} times)\n"
+
+    if "popular_threat_category" in classification_data:
+        formatted_output += "Threat Categories:\n"
+        for category in classification_data["popular_threat_category"]:
+            formatted_output += f"- {category['value']} (Detected {category['count']} times)\n"
+
+    return formatted_output
+
 def format_virus_total_response(response, scan_type):
     """Format the VirusTotal API response for readability with Colorama colors."""
     if "data" not in response:
         return f"{Fore.RED}Invalid or missing data in response.{Style.RESET_ALL}"
 
     attributes = response["data"].get("attributes", {})
+    identifier = response["data"].get("id", "Unknown")
+    virustotal_link = get_virustotal_gui_link(scan_type, identifier)
+
     formatted_output = f"\n{Fore.CYAN}=== VirusTotal {scan_type} Scan Report ==={Style.RESET_ALL}\n"
 
-    if scan_type == "File":
-        first_submission = datetime.fromtimestamp(
-            attributes.get("first_submission_date", 0), tz=timezone.utc
-        ).strftime('%Y-%m-%d %H:%M:%S')
-        formatted_output += f"""
-{Fore.YELLOW}File Name:{Style.RESET_ALL} {attributes.get('meaningful_name', 'Unknown')}
-{Fore.YELLOW}File Size:{Style.RESET_ALL} {attributes.get('size', 'Unknown')} bytes
-{Fore.YELLOW}SHA256:{Style.RESET_ALL} {attributes.get('sha256', 'Unknown')}
-{Fore.YELLOW}Type:{Style.RESET_ALL} {attributes.get('type_description', 'Unknown')}
-{Fore.YELLOW}First Submission Date:{Style.RESET_ALL} {first_submission}
+    malicious_count = attributes.get('last_analysis_stats', {}).get('malicious', 0)
+    verdict = get_threat_verdict(malicious_count)
 
+    formatted_output += f"""
 {Fore.RED}--- Detection Summary ---{Style.RESET_ALL}
-{Fore.RED}Malicious Detections:{Style.RESET_ALL} {attributes.get('last_analysis_stats', {}).get('malicious', 'Unknown')}
-{Fore.GREEN}Undetected:{Style.RESET_ALL} {attributes.get('last_analysis_stats', {}).get('undetected', 'Unknown')}
+{Fore.RED}Malicious Detections:{Style.RESET_ALL} {malicious_count}
+{verdict}
+{format_threat_classification(attributes.get('popular_threat_classification', {}))}
 
-{Fore.YELLOW}--- Threat Classification ---{Style.RESET_ALL}
-{json.dumps(attributes.get('popular_threat_classification', {}), indent=4)}
-
-{Fore.CYAN}VirusTotal Report Link:{Style.RESET_ALL}
-{response['data'].get('links', {}).get('self', 'Unknown')}
+{Fore.CYAN}VirusTotal Report Link:{Style.RESET_ALL} {virustotal_link}
 """
-    elif scan_type == "IP":
-        formatted_output += f"""
-{Fore.YELLOW}IP Address:{Style.RESET_ALL} {response['data'].get('id', 'Unknown')}
-{Fore.YELLOW}Country:{Style.RESET_ALL} {attributes.get('country', 'Unknown')}
-{Fore.YELLOW}Reputation:{Style.RESET_ALL} {attributes.get('reputation', 'Unknown')}
-
-{Fore.CYAN}VirusTotal Report Link:{Style.RESET_ALL}
-{response['data'].get('links', {}).get('self', 'Unknown')}
-"""
-    elif scan_type == "URL":
-        formatted_output += f"""
-{Fore.YELLOW}URL:{Style.RESET_ALL} {response['data'].get('id', 'Unknown')}
-
-{Fore.CYAN}VirusTotal Report Link:{Style.RESET_ALL}
-{response['data'].get('links', {}).get('self', 'Unknown')}
-"""
-    else:
-        formatted_output = f"{Fore.RED}Unknown scan type.{Style.RESET_ALL}"
 
     return formatted_output
 
 def ask_chatgpt(scan_data, scan_type):
+    """Short, high-value analysis with 5 bullet points."""
     prompt = f"""
-You are a cybersecurity expert specializing in threat intelligence and malware analysis.
-Below is a VirusTotal scan result for a {scan_type}. 
+You are a cybersecurity expert. Below is a VirusTotal scan result for a {scan_type}. 
 
-Your task is to:
-- Provide a **high-level** assessment of the findings.
-- Summarize key indicators that contribute to the risk classification.
-- Identify notable patterns, if any, based on the analysis.
-- Explain why this {scan_type} is detected as malicious or not.
-- Compare the findings to known threat intelligence trends.
-
-Strictly focus on **objective analysis** of the scan results. **Do not** provide recommendations.
+Summarize in 5 bullet points:
+1. **Risk Level:** (Low, Medium, High, Critical)
+2. **Primary Threat Indicators** (Why is it risky?)
+3. **Known Malware Patterns** (If applicable)
+4. **Confidence Score** (How sure is the classification?)
+5. **One-Sentence Takeaway** (e.g., "Avoid opening this file.")
 
 ### Scan Data:
 {json.dumps(scan_data, indent=4)}
 
-Deliver a clear and structured cybersecurity assessment.
+Respond in a **short, structured format**. No extra explanations.
     """
 
     try:
@@ -136,7 +150,7 @@ Deliver a clear and structured cybersecurity assessment.
         return f"{Fore.RED}General Error: {e}{Style.RESET_ALL}"
 
 def format_chatgpt_analysis(analysis):
-    formatted_output = f"\n{Fore.CYAN}=== Advanced Cybersecurity Analysis ==={Style.RESET_ALL}\n"
+    formatted_output = f"\n{Fore.CYAN}=== Advanced AI Analysis ==={Style.RESET_ALL}\n"
     formatted_output += f"{Fore.GREEN}{analysis.strip()}{Style.RESET_ALL}"
     formatted_output += f"\n{Fore.CYAN}======================================{Style.RESET_ALL}\n"
     return formatted_output
@@ -150,24 +164,14 @@ if __name__ == "__main__":
     print("3. URL")
     choice = input("Enter option (1/2/3): ").strip()
 
-    result = None
-    scan_type = ""
+    scan_type = "File" if choice == "1" else "IP" if choice == "2" else "URL"
+    query = input(f"Enter {scan_type.lower()} to scan: ").strip()
 
-    if choice == "1":
-        file_hash = input("Enter file hash to scan: ").strip()
-        result = vt.scan_hash(file_hash)
-        scan_type = "File"
-    elif choice == "2":
-        ip_address = input("Enter IP address to scan: ").strip()
-        result = vt.scan_ip(ip_address)
-        scan_type = "IP"
-    elif choice == "3":
-        url_to_scan = input("Enter URL to scan: ").strip()
-        result = vt.scan_url(url_to_scan)
-        scan_type = "URL"
-    else:
-        print(f"{Fore.RED}Invalid choice. Exiting.{Style.RESET_ALL}")
-        exit()
+    result = (
+        vt.scan_hash(query) if scan_type == "File" else
+        vt.scan_ip(query) if scan_type == "IP" else
+        vt.scan_url(query)
+    )
 
     formatted_report = format_virus_total_response(result, scan_type)
     print(formatted_report)
