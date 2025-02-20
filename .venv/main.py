@@ -101,7 +101,6 @@ def format_virus_total_response(response, scan_type):
     return formatted_output
 
 def ask_chatgpt(scan_data, scan_type):
-    """Send the scan data to ChatGPT for high-level cybersecurity analysis (no recommendations)."""
     prompt = f"""
 You are a cybersecurity expert specializing in threat intelligence and malware analysis.
 Below is a VirusTotal scan result for a {scan_type}. 
@@ -137,7 +136,6 @@ Deliver a clear and structured cybersecurity assessment.
         return f"{Fore.RED}General Error: {e}{Style.RESET_ALL}"
 
 def format_chatgpt_analysis(analysis):
-    """Formats the ChatGPT response into a structured report-style output with Colorama colors."""
     formatted_output = f"\n{Fore.CYAN}=== Advanced Cybersecurity Analysis ==={Style.RESET_ALL}\n"
     formatted_output += f"{Fore.GREEN}{analysis.strip()}{Style.RESET_ALL}"
     formatted_output += f"\n{Fore.CYAN}======================================{Style.RESET_ALL}\n"
