@@ -2,20 +2,20 @@ import os
 import json
 import requests
 import openai
-import tiktoken  # For estimating token count
+import tiktoken
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 from colorama import Fore, Style, init
 
-# Initialize Colorama for cross-platform color support
+# Initialize Colorama for colors
 init(autoreset=True)
 
-# Load API keys from .env file
+# Load API keys from the .env file
 load_dotenv()
 VT_API_KEY = os.getenv("VT_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Initialize OpenAI client
+# Initialize the OpenAI API client
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 
@@ -54,7 +54,6 @@ class VirusTotalAPI:
 
 
 def get_virustotal_gui_link(scan_type, identifier):
-    """Generates the correct VirusTotal GUI link for the scan result."""
     base_url = "https://www.virustotal.com/gui/"
     if scan_type == "File":
         return f"{base_url}file/{identifier}"
@@ -66,7 +65,7 @@ def get_virustotal_gui_link(scan_type, identifier):
 
 
 def get_threat_verdict(malicious_count):
-    """Returns a quick verdict based on malicious detection count."""
+    # Returns a quick verdict based on malicious detection count.
     if malicious_count >= 15:
         return f"{Fore.RED}[DANGEROUS] Highly Malicious - Immediate Action Required!{Style.RESET_ALL}"
     elif 5 <= malicious_count < 15:
@@ -76,7 +75,7 @@ def get_threat_verdict(malicious_count):
 
 
 def format_threat_classification(classification_data):
-    """Formats VirusTotal threat classification into a structured format."""
+    # Formats VirusTotal threat classification into a structured format.
     if not classification_data:
         return "No classification data available."
 
@@ -98,7 +97,7 @@ def format_threat_classification(classification_data):
 
 
 def format_virus_total_response(response, scan_type):
-    """Format the VirusTotal API response for readability with Colorama colors."""
+    # Format the VirusTotal API response for readability with Colorama colors.
     if "data" not in response:
         return f"{Fore.RED}Invalid or missing data in response.{Style.RESET_ALL}"
 
@@ -122,7 +121,7 @@ def format_virus_total_response(response, scan_type):
 
 
 def ask_chatgpt(scan_data, scan_type):
-    """Short, high-value analysis with 5 bullet points."""
+    # Short, high-value analysis prompt engineering.
     prompt = f"""
 You are a cybersecurity expert. Below is a VirusTotal scan result for a {scan_type}. 
 
@@ -143,7 +142,7 @@ Respond in a **short, structured format**. No extra explanations.
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an expert in cybersecurity and malware analysis."},
+                {"role": "system", "content": "You are an expert in cybersecurity and malware analysis with decades of experience."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3
@@ -156,7 +155,7 @@ Respond in a **short, structured format**. No extra explanations.
 
 
 def format_chatgpt_analysis(analysis):
-    """Formats ChatGPT response into a structured report-style output."""
+    # Formats the ChatGPT response into a structured report-style output.
     formatted_output = f"\n{Fore.CYAN}=== Advanced AI Analysis ==={Style.RESET_ALL}\n"
     formatted_output += f"{Fore.GREEN}{analysis.strip()}{Style.RESET_ALL}"
     formatted_output += f"\n{Fore.CYAN}======================================{Style.RESET_ALL}\n"
@@ -164,7 +163,7 @@ def format_chatgpt_analysis(analysis):
 
 
 def estimate_openai_cost(scan_data, model="gpt-4"):
-    """Estimates the cost of running ChatGPT based on the scan data size."""
+    #  # Here we estimate the cost for AI analysis
     enc = tiktoken.encoding_for_model(model)
     input_tokens = len(enc.encode(json.dumps(scan_data)))
     output_tokens = 200  # Estimated output length for a short summary
@@ -178,7 +177,7 @@ def estimate_openai_cost(scan_data, model="gpt-4"):
 
     return round(cost, 4), input_tokens, output_tokens
 
-
+# main function
 if __name__ == "__main__":
     vt = VirusTotalAPI(VT_API_KEY)
 
