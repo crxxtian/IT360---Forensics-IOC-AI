@@ -163,7 +163,7 @@ def format_chatgpt_analysis(analysis):
 
 
 def estimate_openai_cost(scan_data, model="gpt-4"):
-    #  # Here we estimate the cost for AI analysis
+    # Estimates the cost of running ChatGPT based on the scan data size.
     enc = tiktoken.encoding_for_model(model)
     input_tokens = len(enc.encode(json.dumps(scan_data)))
     output_tokens = 200  # Estimated output length for a short summary
