@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import openai
+import tiktoken  # For estimating token count
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 from colorama import Fore, Style, init
@@ -16,6 +17,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Initialize OpenAI client
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
 
 class VirusTotalAPI:
     BASE_URL = "https://www.virustotal.com/api/v3/"
@@ -50,6 +52,7 @@ class VirusTotalAPI:
         response = requests.get(url, headers=self.headers)
         return response.json() if response.status_code == 200 else {"error": "Failed to retrieve URL scan results"}
 
+
 def get_virustotal_gui_link(scan_type, identifier):
     """Generates the correct VirusTotal GUI link for the scan result."""
     base_url = "https://www.virustotal.com/gui/"
@@ -61,6 +64,7 @@ def get_virustotal_gui_link(scan_type, identifier):
         return f"{base_url}url/{identifier}"
     return "Unknown"
 
+
 def get_threat_verdict(malicious_count):
     """Returns a quick verdict based on malicious detection count."""
     if malicious_count >= 15:
@@ -69,6 +73,7 @@ def get_threat_verdict(malicious_count):
         return f"{Fore.YELLOW}[SUSPICIOUS] Medium Risk - Proceed with Caution!{Style.RESET_ALL}"
     else:
         return f"{Fore.GREEN}[SAFE] Low Risk - Likely Harmless.{Style.RESET_ALL}"
+
 
 def format_threat_classification(classification_data):
     """Formats VirusTotal threat classification into a structured format."""
@@ -91,6 +96,7 @@ def format_threat_classification(classification_data):
 
     return formatted_output
 
+
 def format_virus_total_response(response, scan_type):
     """Format the VirusTotal API response for readability with Colorama colors."""
     if "data" not in response:
@@ -100,12 +106,11 @@ def format_virus_total_response(response, scan_type):
     identifier = response["data"].get("id", "Unknown")
     virustotal_link = get_virustotal_gui_link(scan_type, identifier)
 
-    formatted_output = f"\n{Fore.CYAN}=== VirusTotal {scan_type} Scan Report ==={Style.RESET_ALL}\n"
-
     malicious_count = attributes.get('last_analysis_stats', {}).get('malicious', 0)
     verdict = get_threat_verdict(malicious_count)
 
-    formatted_output += f"""
+    formatted_output = f"""
+{Fore.CYAN}=== VirusTotal {scan_type} Scan Report ==={Style.RESET_ALL}
 {Fore.RED}--- Detection Summary ---{Style.RESET_ALL}
 {Fore.RED}Malicious Detections:{Style.RESET_ALL} {malicious_count}
 {verdict}
@@ -113,8 +118,8 @@ def format_virus_total_response(response, scan_type):
 
 {Fore.CYAN}VirusTotal Report Link:{Style.RESET_ALL} {virustotal_link}
 """
-
     return formatted_output
+
 
 def ask_chatgpt(scan_data, scan_type):
     """Short, high-value analysis with 5 bullet points."""
@@ -149,11 +154,30 @@ Respond in a **short, structured format**. No extra explanations.
     except Exception as e:
         return f"{Fore.RED}General Error: {e}{Style.RESET_ALL}"
 
+
 def format_chatgpt_analysis(analysis):
+    """Formats ChatGPT response into a structured report-style output."""
     formatted_output = f"\n{Fore.CYAN}=== Advanced AI Analysis ==={Style.RESET_ALL}\n"
     formatted_output += f"{Fore.GREEN}{analysis.strip()}{Style.RESET_ALL}"
     formatted_output += f"\n{Fore.CYAN}======================================{Style.RESET_ALL}\n"
     return formatted_output
+
+
+def estimate_openai_cost(scan_data, model="gpt-4"):
+    """Estimates the cost of running ChatGPT based on the scan data size."""
+    enc = tiktoken.encoding_for_model(model)
+    input_tokens = len(enc.encode(json.dumps(scan_data)))
+    output_tokens = 200  # Estimated output length for a short summary
+
+    if model == "gpt-4":
+        cost = (input_tokens / 1000 * 0.03) + (output_tokens / 1000 * 0.06)
+    elif model == "gpt-3.5-turbo":
+        cost = (input_tokens / 1000 * 0.0015) + (output_tokens / 1000 * 0.002)
+    else:
+        cost = 0
+
+    return round(cost, 4), input_tokens, output_tokens
+
 
 if __name__ == "__main__":
     vt = VirusTotalAPI(VT_API_KEY)
@@ -175,6 +199,10 @@ if __name__ == "__main__":
 
     formatted_report = format_virus_total_response(result, scan_type)
     print(formatted_report)
+
+    estimated_cost, input_tokens, output_tokens = estimate_openai_cost(result, model="gpt-4")
+    print(f"\n{Fore.YELLOW}Estimated cost for AI analysis: ${estimated_cost} "
+          f"(Input: {input_tokens} tokens, Output: {output_tokens} tokens){Style.RESET_ALL}")
 
     advanced = input("Would you like advanced analysis from ChatGPT? (Y/n): ").strip().lower()
     if advanced in ("", "y", "yes"):
