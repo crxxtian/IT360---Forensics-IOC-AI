@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from dotenv import load_dotenv
 from PyQt5 import QtWidgets, QtCore
 
-# Optional: Colorama for CLI colors (not used in the GUI, but kept for formatting functions)
+# Optional: Colorama for CLI colors (used only in formatting functions)
 from colorama import Fore, Style, init
 
 init(autoreset=True)
@@ -70,11 +70,11 @@ def get_virustotal_gui_link(scan_type, identifier):
 
 def get_threat_verdict(malicious_count):
     if malicious_count >= 15:
-        return f"[DANGEROUS] Highly Malicious - Immediate Action Required!"
+        return "[DANGEROUS] Highly Malicious - Immediate Action Required!"
     elif 5 <= malicious_count < 15:
-        return f"[SUSPICIOUS] Medium Risk - Proceed with Caution!"
+        return "[SUSPICIOUS] Medium Risk - Proceed with Caution!"
     else:
-        return f"[SAFE] Low Risk - Likely Harmless."
+        return "[SAFE] Low Risk - Likely Harmless."
 
 
 def format_threat_classification(classification_data):
@@ -121,9 +121,37 @@ VirusTotal Report Link: {virustotal_link}
     return formatted_output
 
 
+def reduce_scan_data(scan_data, scan_type):
+    """
+    Extract only the essential fields from the full scan data to reduce token count.
+    """
+    if "data" not in scan_data:
+        return {"error": "No data available"}
+    attributes = scan_data["data"].get("attributes", {})
+    reduced = {}
+    # Common field: identifier
+    reduced["id"] = scan_data["data"].get("id", "Unknown")
+
+    if scan_type == "File":
+        reduced["meaningful_name"] = attributes.get("meaningful_name", "Unknown")
+        reduced["size"] = attributes.get("size", "Unknown")
+        reduced["sha256"] = attributes.get("sha256", "Unknown")
+        reduced["last_analysis_stats"] = attributes.get("last_analysis_stats", {})
+        reduced["popular_threat_classification"] = attributes.get("popular_threat_classification", {})
+    elif scan_type == "IP":
+        reduced["country"] = attributes.get("country", "Unknown")
+        reduced["reputation"] = attributes.get("reputation", "Unknown")
+    elif scan_type == "URL":
+        reduced["last_analysis_stats"] = attributes.get("last_analysis_stats", {})
+    return reduced
+
+
 def ask_chatgpt(scan_data, scan_type):
+    # Reduce the scan data to only include essential fields.
+    reduced_data = reduce_scan_data(scan_data, scan_type)
+
     prompt = f"""
-You are a cybersecurity expert. Below is a VirusTotal scan result for a {scan_type}. 
+You are a cybersecurity expert. Below is a reduced VirusTotal scan result for a {scan_type}. 
 
 Summarize in 5 bullet points:
 1. **Risk Level:** (Low, Medium, High, Critical)
@@ -132,8 +160,8 @@ Summarize in 5 bullet points:
 4. **Confidence Score** (How sure is the classification?)
 5. **One-Sentence Takeaway** (e.g., "Avoid opening this file.")
 
-### Scan Data:
-{json.dumps(scan_data, indent=4)}
+### Reduced Scan Data:
+{json.dumps(reduced_data, indent=4)}
 
 Respond in a short, structured format. No extra explanations.
 """
@@ -160,8 +188,10 @@ def format_chatgpt_analysis(analysis):
 
 
 def estimate_openai_cost(scan_data, model="gpt-4"):
+    # Estimate cost based on the reduced scan data
+    reduced_data = reduce_scan_data(scan_data, "File")  # Use "File" as a default; adjust as needed.
     enc = tiktoken.encoding_for_model(model)
-    input_tokens = len(enc.encode(json.dumps(scan_data)))
+    input_tokens = len(enc.encode(json.dumps(reduced_data)))
     output_tokens = 200  # Estimated output length
     if model == "gpt-4":
         cost = (input_tokens / 1000 * 0.03) + (output_tokens / 1000 * 0.06)
@@ -244,7 +274,7 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.warning(self, "Input Error", "Please enter a value for scanning.")
             return
 
-        # Determine scan type and call appropriate VirusTotal API function
+        # Determine scan type and call the appropriate API function
         if self.file_radio.isChecked():
             scan_type = "File"
             result = self.vt.scan_hash(query)
@@ -262,12 +292,12 @@ class MainWindow(QtWidgets.QMainWindow):
         report = format_virus_total_response(result, scan_type)
         self.output_area.append(report)
 
-        # Estimate OpenAI cost and display it
+        # Estimate and display potential cost for the AI summary (using reduced scan data)
         estimated_cost, input_tokens, output_tokens = estimate_openai_cost(result, model="gpt-4")
-        cost_info = f"\nEstimated cost for AI analysis: ${estimated_cost} (Input: {input_tokens} tokens, Output: {output_tokens} tokens)\n"
+        cost_info = f"\nEstimated cost for AI summary: ${estimated_cost} (Input: {input_tokens} tokens, Output: {output_tokens} tokens)\n"
         self.output_area.append(cost_info)
 
-        # If advanced analysis is selected, call ChatGPT and display the result
+        # If advanced analysis is selected, perform AI analysis using reduced scan data
         if self.advanced_checkbox.isChecked():
             self.output_area.append("\nPerforming advanced analysis...\n")
             analysis = ask_chatgpt(result, scan_type)
