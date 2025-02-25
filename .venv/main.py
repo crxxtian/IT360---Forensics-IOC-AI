@@ -177,7 +177,7 @@ def estimate_openai_cost(scan_data, model="gpt-4"):
 
     return round(cost, 4), input_tokens, output_tokens
 
-# main function
+# -main function
 if __name__ == "__main__":
     vt = VirusTotalAPI(VT_API_KEY)
 
