@@ -1,0 +1,7 @@
+{
+  "python.analysis.extraPaths": ["."],
+  "python.defaultInterpreterPath": ".venv/Scripts/python.exe",
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}"
+  }
+}
