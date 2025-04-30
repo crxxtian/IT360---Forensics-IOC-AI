@@ -31,8 +31,8 @@ ioc_app/
 ## Installation
 1. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-username/it360-forensics-ioc.git
-   cd it360-forensics-ioc
+   git clone https://github.com/crxxtian/IT360---Forensics-IOC-AI.git
+   cd IT360---Forensics-IOC-AI
    ```
 
 2. **Set Up Virtual Environment**:
