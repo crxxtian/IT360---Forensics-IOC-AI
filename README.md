@@ -1,31 +1,31 @@
 # IT360 Forensics IOC Analysis Tool
 
 ## Overview
-This project is a group effort for the IT 360 Forensics course, designed to analyze Indicators of Compromise (IOCs) using VirusTotal's API and OpenAI's GPT models. The tool provides a user-friendly PyQt5 GUI to scan file hashes, IP addresses, or URLs, delivering detailed threat reports and advanced AI-driven analysis.
+The IT360 Forensics IOC Analysis Tool is our final project for the IT 360 Forensics course. This Python-based application analyzes Indicators of Compromise (IOCs) like file hashes, IP addresses, and URLs using VirusTotal's API and OpenAI's GPT models. It features a sleek PyQt5 GUI for delivering detailed threat reports with AI-powered insights.
 
 ## Features
-- **VirusTotal Integration**: Queries VirusTotal API for real-time threat intelligence on files, IPs, and URLs.
-- **AI-Powered Analysis**: Leverages OpenAI's GPT models to summarize scan results with risk levels, threat indicators, and actionable insights.
-- **Interactive GUI**: Built with PyQt5, offering a sleek interface to select scan types, input IOCs, and view reports.
-- **Threat Classification**: Displays malicious detections, threat labels, and categories with color-coded verdicts (Safe, Suspicious, Dangerous).
-- **Cost Estimation**: Estimates OpenAI API usage costs based on token counts for transparency.
-- **Copy to Clipboard**: Easily copy scan reports for sharing or documentation.
+- **VirusTotal Integration**: Real-time threat intelligence for files, IPs, and URLs.
+- **AI Analysis**: OpenAI GPT summarizes scan results with risk levels and actionable insights.
+- **Interactive GUI**: PyQt5 interface for selecting scan types, entering IOCs, and viewing reports.
+- **Threat Classification**: Color-coded verdicts (Safe, Suspicious, Dangerous) with detection details.
+- **Cost Estimation**: Transparent OpenAI API cost estimates based on token usage.
+- **Clipboard Support**: Copy scan reports for easy sharing.
 
 ## Repository Structure
 ```
 ioc_app/
 ├── app/
-│   ├── __init__.py           # Core logic package
-│   ├── ai_analysis.py        # OpenAI GPT analysis module
-│   ├── utils.py             # Utility functions for formatting and processing
+│   ├── __init__.py           # Core logic
+│   ├── ai_analysis.py        # OpenAI GPT analysis
+│   ├── utils.py             # Utility functions
 │   └── virustotal_api.py    # VirusTotal API client
 ├── gui/
 │   ├── __init__.py           # GUI package
-│   └── main_window.py        # PyQt5 main window implementation
-├── main.py                   # Application entry point
+│   └── main_window.py        # PyQt5 main window
+├── main.py                   # App entry point
 ├── .gitignore                # Git ignore rules
-├── README.md                 # Project documentation
-└── requirements.txt          # Python dependencies
+├── README.md                 # Documentation
+└── requirements.txt          # Dependencies
 ```
 
 ## Installation
@@ -35,10 +35,10 @@ ioc_app/
    cd it360-forensics-ioc
    ```
 
-2. **Set Up a Virtual Environment** (recommended):
+2. **Set Up Virtual Environment**:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate  # Windows: venv\Scripts\activate
    ```
 
 3. **Install Dependencies**:
@@ -47,28 +47,28 @@ ioc_app/
    ```
 
 4. **Configure API Keys**:
-   - Create a `.env` file in the project root.
-   - Add your VirusTotal and OpenAI API keys:
-     ```
+   - Create a `.env` file in the root directory.
+   - Add VirusTotal and OpenAI API keys:
+     ```plaintext
      VT_API_KEY=your_virustotal_api_key
      OPENAI_API_KEY=your_openai_api_key
      ```
-   - Obtain keys from:
+   - Get keys from:
      - [VirusTotal](https://www.virustotal.com/gui/join-us)
      - [OpenAI](https://platform.openai.com/account/api-keys)
 
 ## Usage
-1. **Run the Application**:
+1. **Run the App**:
    ```bash
    python main.py
    ```
 
 2. **Using the GUI**:
-   - Select a scan type (File Hash, IP Address, or URL).
-   - Enter the IOC (e.g., a SHA256 hash, IP, or URL).
-   - Enable "Advanced AI Analysis" for GPT-based insights (optional).
+   - Select scan type (File Hash, IP Address, URL).
+   - Enter the IOC (e.g., SHA256 hash, IP, or URL).
+   - Check "Advanced AI Analysis" for GPT insights (optional).
    - Click "Run Scan" to generate the report.
-   - Use "Copy Report" to copy the output to your clipboard.
+   - Click "Copy Report" to copy output to clipboard.
 
 ## Example Output
 ```
@@ -92,34 +92,24 @@ VirusTotal Report Link: https://www.virustotal.com/gui/file/<hash>
 ```
 
 ## Security Notes
-- The `.env` file contains sensitive API keys and is excluded via `.gitignore`. Never commit this file.
-- Handle scan results with care, as they may contain sensitive information.
-- Ensure API keys are kept secure and not shared publicly.
+- The `.env` file contains sensitive API keys and is ignored by `.gitignore`. Never commit it.
+- Treat scan results as sensitive data.
+- Keep API keys secure and private.
 
 ## Dependencies
-Key libraries include:
-- `PyQt5`: For the GUI
-- `openai`: For AI analysis
-- `requests`: For VirusTotal API calls
-- `python-dotenv`: For environment variable management
-- `tiktoken`: For token estimation
-- See `requirements.txt` for the full list.
-
-## Contributing
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/your-feature`).
-3. Commit changes (`git commit -m "Add your feature"`).
-4. Push to the branch (`git push origin feature/your-feature`).
-5. Open a Pull Request.
-
-## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+Key libraries:
+- `PyQt5`: GUI framework
+- `openai`: AI analysis
+- `requests`: API requests
+- `python-dotenv`: Environment variables
+- `tiktoken`: Token estimation
+- Full list in `requirements.txt`.
 
 ## Acknowledgments
-- IT 360 Forensics course instructors and team members.
-- [VirusTotal](https://www.virustotal.com/) for their API.
-- [OpenAI](https://openai.com/) for advanced AI capabilities.
+- IT 360 Forensics course instructors and team.
+- [VirusTotal](https://www.virustotal.com/) for API support.
+- [OpenAI](https://openai.com/) for AI capabilities.
 
 ---
 
-*Built with 💻 by the IT360 Forensics Team*
+*Built for IT360 Forensics Final Project*
